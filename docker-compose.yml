@@ -1,0 +1,196 @@
+version: '3.8'
+
+services:
+  # Main Skylus Analytics Application
+  skylus-analytics:
+    build: .
+    ports:
+      - "9501:9501"
+    environment:
+      - SKYLUS_REDIS_URL=redis://redis:6379/0
+      - SKYLUS_POSTGRES_URL=postgresql://skylus:skylus123@postgres:5432/skylus_analytics
+      - SKYLUS_ELASTICSEARCH_URL=http://elasticsearch:9200
+    volumes:
+      - ./logs:/app/logs
+      - ./exports:/app/exports
+      - ./config:/app/config
+      - ./backups:/app/backups
+    depends_on:
+      - redis
+      - postgres
+      - elasticsearch
+    restart: unless-stopped
+    networks:
+      - skylus-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.skylus.rule=Host(`analytics.company.com`)"
+      - "traefik.http.routers.skylus.tls=true"
+      - "traefik.http.routers.skylus.tls.certresolver=letsencrypt"
+
+  # Redis for Caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: unless-stopped
+    networks:
+      - skylus-network
+    sysctls:
+      - net.core.somaxconn=65535
+
+  # PostgreSQL for Metadata Storage
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_DB: skylus_analytics
+      POSTGRES_USER: skylus
+      POSTGRES_PASSWORD: skylus123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - skylus-network
+
+  # Elasticsearch for Log Indexing (Optional)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+    networks:
+      - skylus-network
+
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/ssl:/etc/nginx/ssl
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - skylus-analytics
+    restart: unless-stopped
+    networks:
+      - skylus-network
+
+  # Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    restart: unless-stopped
+    networks:
+      - skylus-network
+
+  # Grafana for Advanced Monitoring
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=skylus123
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - skylus-network
+
+  # Log Aggregation with Fluentd
+  fluentd:
+    image: fluent/fluentd:v1.16-debian
+    ports:
+      - "24224:24224"
+    volumes:
+      - ./config/fluentd:/fluentd/etc
+      - ./logs:/var/log/input
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    networks:
+      - skylus-network
+
+  # Backup Service
+  backup:
+    image: alpine:latest
+    volumes:
+      - ./backups:/backups
+      - ./logs:/data/logs
+      - ./exports:/data/exports
+      - postgres_data:/data/postgres
+    command: |
+      sh -c "
+        apk add --no-cache postgresql-client tar gzip
+        while true; do
+          DATE=$$(date +%Y%m%d_%H%M%S)
+          echo 'Creating backup...'
+          
+          # Database backup
+          PGPASSWORD=skylus123 pg_dump -h postgres -U skylus skylus_analytics > /backups/db_backup_$$DATE.sql
+          
+          # File backup
+          tar -czf /backups/files_backup_$$DATE.tar.gz -C /data .
+          
+          # Cleanup old backups (keep 30 days)
+          find /backups -name '*backup_*.sql' -mtime +30 -delete
+          find /backups -name '*backup_*.tar.gz' -mtime +30 -delete
+          
+          echo 'Backup completed'
+          sleep 86400  # Daily backup
+        done
+      "
+    restart: unless-stopped
+    networks:
+      - skylus-network
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  skylus-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Production deployment command:
+# docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d

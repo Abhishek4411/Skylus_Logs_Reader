@@ -1,0 +1,360 @@
+# Skylus Analytics Platform - Enterprise Configuration
+# Professional-grade settings for production deployment
+
+# Application Information
+app:
+  name: "Skylus Analytics Platform"
+  version: "2.0.0"
+  description: "Enterprise Log Intelligence & Performance Analytics"
+  author: "Skylus Technologies"
+  license: "Enterprise"
+
+# Server Configuration
+server:
+  host: "0.0.0.0"
+  port: 9501
+  max_upload_size_mb: 500
+  max_concurrent_users: 100
+  session_timeout_minutes: 480
+  enable_compression: true
+  enable_cors: false
+  enable_xsrf_protection: true
+
+# Security Settings
+security:
+  enable_authentication: false
+  auth_provider: "local"  # local, ldap, oauth, saml
+  session_secret_key: "your-secret-key-change-me"
+  password_policy:
+    min_length: 8
+    require_uppercase: true
+    require_lowercase: true
+    require_numbers: true
+    require_symbols: true
+  allowed_ip_ranges:
+    - "192.168.0.0/16"
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "127.0.0.1/32"
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 60
+    burst_size: 10
+
+# Database Configuration
+database:
+  # Primary database for metadata
+  primary:
+    type: "postgresql"
+    host: "localhost"
+    port: 5432
+    database: "skylus_analytics"
+    username: "skylus_user"
+    password: "secure_password"
+    pool_size: 20
+    max_overflow: 30
+    pool_timeout: 30
+    
+  # Time-series database for metrics
+  timeseries:
+    type: "influxdb"
+    host: "localhost"
+    port: 8086
+    database: "skylus_metrics"
+    username: "skylus_metrics"
+    password: "metrics_password"
+    retention_policy: "30d"
+
+# Caching Configuration
+cache:
+  provider: "redis"  # redis, memory, disabled
+  redis:
+    host: "localhost"
+    port: 6379
+    database: 0
+    password: ""
+    ssl: false
+    connection_pool_size: 50
+  ttl_seconds:
+    dashboard_data: 300    # 5 minutes
+    user_sessions: 3600    # 1 hour
+    analytics_cache: 1800  # 30 minutes
+    report_cache: 7200     # 2 hours
+
+# Search Engine (Elasticsearch)
+search:
+  enabled: true
+  hosts:
+    - "localhost:9200"
+  index_prefix: "skylus"
+  number_of_shards: 3
+  number_of_replicas: 1
+  refresh_interval: "5s"
+  max_result_window: 10000
+
+# Analytics Configuration
+analytics:
+  # Data processing
+  max_records_per_query: 100000
+  batch_size: 5000
+  parallel_processing: true
+  max_worker_threads: 4
+  
+  # Visualization settings
+  enable_3d_graphics: true
+  animation_speed: 1.0
+  chart_cache_enabled: true
+  max_chart_data_points: 50000
+  
+  # Auto-refresh settings
+  auto_refresh_enabled: false
+  auto_refresh_interval_seconds: 30
+  
+  # Data retention
+  raw_logs_retention_days: 90
+  aggregated_data_retention_days: 365
+  reports_retention_days: 1095
+
+# Log Processing
+log_processing:
+  # Input sources
+  supported_formats:
+    - "skylus_standard"
+    - "apache_combined"
+    - "nginx_combined"
+    - "json"
+    - "csv"
+    - "syslog"
+  
+  # Processing pipeline
+  enable_real_time_processing: true
+  batch_processing_interval_minutes: 5
+  duplicate_detection: true
+  data_validation: true
+  
+  # File handling
+  max_file_size_mb: 1000
+  compression_support:
+    - "gzip"
+    - "bzip2"
+    - "zip"
+  
+  # Pattern recognition
+  enable_anomaly_detection: true
+  enable_pattern_learning: true
+  alert_on_anomalies: true
+
+# User Interface
+ui:
+  # Theme configuration
+  theme: "dark_pro"
+  custom_branding:
+    enabled: true
+    company_logo: "/assets/logo.png"
+    company_name: "Your Company"
+    primary_color: "#4ecdc4"
+    secondary_color: "#ff6b6b"
+    accent_color: "#45b7d1"
+  
+  # Layout settings
+  sidebar_expanded: true
+  chart_animations: true
+  loading_animations: true
+  responsive_design: true
+  
+  # Dashboard configuration
+  default_dashboard: "executive_overview"
+  available_dashboards:
+    - "executive_overview"
+    - "advanced_analytics"
+    - "user_intelligence"
+    - "security_center"
+    - "service_performance"
+    - "data_explorer"
+    - "custom_studio"
+
+# Monitoring & Alerting
+monitoring:
+  # Health checks
+  health_check_interval_seconds: 30
+  metrics_collection: true
+  performance_monitoring: true
+  
+  # Alerting
+  enable_alerts: true
+  notification_channels:
+    email:
+      enabled: true
+      smtp_server: "smtp.company.com"
+      smtp_port: 587
+      username: "alerts@company.com"
+      password: "smtp_password"
+      use_tls: true
+    slack:
+      enabled: false
+      webhook_url: "https://hooks.slack.com/services/..."
+      channel: "#skylus-alerts"
+    teams:
+      enabled: false
+      webhook_url: "https://outlook.office.com/webhook/..."
+  
+  # Alert thresholds
+  thresholds:
+    error_rate_percent: 5.0
+    response_time_ms: 5000
+    disk_usage_percent: 80
+    memory_usage_percent: 85
+    cpu_usage_percent: 90
+
+# Backup & Recovery
+backup:
+  enabled: true
+  provider: "local"  # local, s3, azure, gcp
+  
+  # Local backup settings
+  local:
+    backup_directory: "/backups"
+    retention_days: 30
+    compression: true
+  
+  # Cloud backup settings (when enabled)
+  s3:
+    bucket: "skylus-analytics-backups"
+    region: "us-east-1"
+    access_key: "YOUR_ACCESS_KEY"
+    secret_key: "YOUR_SECRET_KEY"
+  
+  # Backup schedule
+  schedule:
+    database: "0 2 * * *"      # Daily at 2 AM
+    files: "0 3 * * 0"         # Weekly on Sunday at 3 AM
+    configuration: "0 4 * * 0" # Weekly on Sunday at 4 AM
+
+# Integration Settings
+integrations:
+  # LDAP/Active Directory
+  ldap:
+    enabled: false
+    server: "ldap://dc.company.com"
+    port: 389
+    base_dn: "dc=company,dc=com"
+    user_dn: "cn=users,dc=company,dc=com"
+    bind_user: "cn=skylus,cn=users,dc=company,dc=com"
+    bind_password: "ldap_password"
+    user_filter: "(objectClass=user)"
+    group_filter: "(objectClass=group)"
+  
+  # Single Sign-On
+  sso:
+    enabled: false
+    provider: "saml"  # saml, oauth2, oidc
+    metadata_url: "https://sso.company.com/metadata"
+    entity_id: "skylus-analytics"
+    
+  # API integrations
+  external_apis:
+    enable_webhooks: true
+    webhook_secret: "webhook_secret_key"
+    api_rate_limit: 1000
+    allowed_origins:
+      - "https://company.com"
+      - "https://monitoring.company.com"
+
+# Compliance & Audit
+compliance:
+  # Data protection
+  enable_audit_logging: true
+  audit_log_retention_days: 2555  # 7 years
+  data_encryption_at_rest: true
+  data_encryption_in_transit: true
+  
+  # Privacy settings
+  anonymize_user_data: false
+  data_retention_policy_days: 365
+  gdpr_compliance: true
+  
+  # Audit trails
+  log_user_actions: true
+  log_data_access: true
+  log_configuration_changes: true
+  log_security_events: true
+
+# Performance Tuning
+performance:
+  # Memory management
+  max_memory_usage_gb: 8
+  garbage_collection_threshold: 0.8
+  
+  # Processing optimization
+  enable_multi_threading: true
+  max_concurrent_queries: 10
+  query_timeout_seconds: 300
+  
+  # Caching strategy
+  aggressive_caching: true
+  cache_compression: true
+  
+  # Database optimization
+  connection_pooling: true
+  query_optimization: true
+  index_optimization: true
+
+# Development & Debug
+development:
+  debug_mode: false
+  verbose_logging: false
+  enable_profiling: false
+  stack_trace_on_error: false
+  development_tools: false
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # Log destinations
+  console:
+    enabled: true
+    level: "INFO"
+  
+  file:
+    enabled: true
+    path: "/var/log/skylus/app.log"
+    max_size_mb: 100
+    backup_count: 5
+    level: "INFO"
+  
+  syslog:
+    enabled: false
+    host: "localhost"
+    port: 514
+    facility: "local0"
+    level: "WARNING"
+
+# Feature Flags
+features:
+  enable_beta_features: false
+  enable_experimental_charts: false
+  enable_ai_insights: true
+  enable_predictive_analytics: true
+  enable_real_time_streaming: false
+  enable_collaborative_features: true
+
+# Version and Maintenance
+maintenance:
+  enable_maintenance_mode: false
+  maintenance_message: "System under maintenance. Please try again later."
+  scheduled_maintenance: []
+  auto_update_check: true
+  update_notification: true
+
+# Custom Extensions
+extensions:
+  enabled: true
+  directory: "/opt/skylus/extensions"
+  auto_load: true
+  security_scan: true
+
+# Environment-specific overrides
+# These can be overridden by environment variables with SKYLUS_ prefix
+# Example: SKYLUS_SERVER_PORT=8502 will override server.port

@@ -1,0 +1,28 @@
+{
+    "server": {
+        "port": 9501,
+        "host": "localhost",
+        "max_upload_size": 200,
+        "theme": "dark_pro"
+    },
+    "analytics": {
+        "max_records_display": 5000,
+        "enable_3d_graphics": true,
+        "animation_speed": 1.0,
+        "auto_refresh": false,
+        "cache_enabled": true
+    },
+    "security": {
+        "enable_auth": false,
+        "allowed_ips": [
+            "127.0.0.1",
+            "localhost"
+        ],
+        "max_file_size_mb": 500
+    },
+    "performance": {
+        "memory_limit_gb": 4,
+        "parallel_processing": true,
+        "compression_enabled": true
+    }
+}

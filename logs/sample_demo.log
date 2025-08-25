@@ -1,0 +1,4 @@
+2025-07-18 10:00:00,123|INFO|abc123|AUTH|testuser|tenant123|192.168.1.1|Mozilla/5.0 (Windows NT 10.0; Win64; x64)|LOGIN|LOGIN succeeded
+2025-07-18 10:01:00,456|INFO|def456|STORAGE|testuser|tenant123|192.168.1.1|Mozilla/5.0 (Windows NT 10.0; Win64; x64)|UPLOAD_FILE|UPLOAD_FILE succeeded
+2025-07-18 10:02:00,789|ERROR|ghi789|COMPUTE|testuser|tenant123|192.168.1.1|Mozilla/5.0 (Windows NT 10.0; Win64; x64)|CREATE_VM|Quota exceeded for cores
+2025-07-18 10:03:00,012|INFO|jkl012|NETWORK|admin|tenant456|192.168.1.2|Mozilla/5.0 (X11; Linux x86_64)|LIST_NETWORK|LIST_NETWORK succeeded
